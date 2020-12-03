@@ -1,3 +1,3 @@
 # simtk: structured illumination microscopy image reconstruction
 
-![Python package](https://github.com/sim-reconstruction/simtk/workflows/Python%20package/badge.svg)
+![Build and test](https://github.com/sim-reconstruction/simtk/workflows/Build%20and%20test/badge.svg)

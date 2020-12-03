@@ -43,8 +43,8 @@ jobs:
         pytest
     - name: Build package
       run: |
-        git clean -fdx
         pip install flit
+        git clean -fdx
         flit build
     - name: Upload package
       uses: actions/upload-artifact@v2
