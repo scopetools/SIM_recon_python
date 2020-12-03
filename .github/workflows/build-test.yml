@@ -39,15 +39,3 @@ jobs:
         name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
         path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
       if: ${{ always() }}
-
-        pytest
-    - name: Build package
-      run: |
-        pip install flit
-        git clean -fdx
-        flit build
-    - name: Upload package
-      uses: actions/upload-artifact@v2
-      with:
-        name: package-${{ matrix.os }}-${{ matrix.python-version }}
-        path: dist/*.whl
