@@ -43,6 +43,7 @@ jobs:
         pytest
     - name: Build package
       run: |
+        git clean -fdx
         pip install flit
         flit build
     - name: Upload package
