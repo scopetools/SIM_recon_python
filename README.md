@@ -1,1 +1,1 @@
-# sim-reconstruction
+# simtk: structured illumination microscopy image reconstruction
