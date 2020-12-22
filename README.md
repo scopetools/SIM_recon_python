@@ -24,9 +24,6 @@ To set up a development build::
 git clone https://github.com/sim-reconstruction/simtk
 cd simtk
 
-# Download testing data
-python data/download.py
-
 # Install dependencies
 pip install -r requirements.txt -r requirements-dev.txt
 
