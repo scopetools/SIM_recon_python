@@ -4,6 +4,8 @@ __version__ = "0.1.0"
 
 __all__ = [
         'load_image',
+        'normalize_psf',
+        'center_psf',
         ]
 
 import itk
@@ -67,7 +69,7 @@ def normalize_psf(psf):
     ----------
 
     psf: itk.VectorImage
-        SIM point spread function (PSF) acquisition data, from simtk.load_image.
+        SIM point spread function (PSF) acquisition data, e.g. from simtk.load_image.
 
     Returns
     -------
@@ -81,6 +83,7 @@ def normalize_psf(psf):
     for component in range(psf_arr.shape[-1]):
         mean = np.mean(psf_arr[..., component])
         result[..., component] = result[..., component] - mean
+        result[result < 0.0] = 0.0
         sum_ = np.sum(result[..., component])
         result[..., component] = result[..., component] / sum_
 
