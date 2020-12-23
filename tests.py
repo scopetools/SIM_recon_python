@@ -2,6 +2,9 @@ from pathlib import Path
 import os
 import sys
 
+import itk
+import numpy as np
+
 script_dir = Path(__file__).resolve().parent
 data_dir = (script_dir / 'data').resolve()
 if not (data_dir / 'input' / 'Cell_3phase.tif').exists():
@@ -18,3 +21,14 @@ def test_package():
 
 def test_load_image():
     image = simtk.load_image(test_psf_file, spacing=[0.11, 0.11, 0.1])
+
+    baseline = str(data_dir / 'baseline' / 'load_image.nrrd')
+    baseline_image = itk.imread(baseline)
+
+    image_arr = itk.array_view_from_image(image)
+    baseline_arr = itk.array_view_from_image(baseline_image)
+    assert np.array_equal(image_arr, baseline_arr)
+
+    image_spacing = np.asarray(itk.spacing(image))
+    baseline_spacing = np.asarray(itk.spacing(baseline_image))
+    assert np.array_equal(image_spacing, baseline_spacing)
