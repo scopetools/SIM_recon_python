@@ -4,11 +4,11 @@ import sys
 
 script_dir = Path(__file__).resolve().parent
 data_dir = (script_dir / 'data').resolve()
-if not (data_dir / 'Cell_3phase.tif').exists():
+if not (data_dir / 'input' / 'Cell_3phase.tif').exists():
     print('Testing data not available.')
     sys.exit(1)
 
-test_psf_file = str(data_dir / 'PSF_3phase.tif')
+test_psf_file = str(data_dir / 'input' / 'PSF_3phase.tif')
 
 import simtk
 
