@@ -58,3 +58,35 @@ def load_image(filename, nphases=3, norientations=1, spacing=None):
         result.SetSpacing(spacing)
 
     return result
+
+def normalize_psf(psf):
+    """Remove DC fourier component, normalize information component to sum to
+    unity.
+
+    Parameters
+    ----------
+
+    psf: itk.VectorImage
+        SIM point spread function (PSF) acquisition data, from simtk.load_image.
+
+    Returns
+    -------
+
+    itk.VectorImage
+        Normalized PSF.
+    """
+
+    psf_arr = itk.array_view_from_image(psf)
+    result = np.copy(psf_arr)
+    for component in range(psf_arr.shape[-1]):
+        mean = np.mean(psf_arr[..., component])
+        result[..., component] = result[..., component] - mean
+        sum_ = np.sum(result[..., component])
+        result[..., component] = result[..., component] / sum_
+
+    result_image = itk.PyBuffer[itk.VectorImage[itk.F, 3]].GetImageViewFromArray(result, is_vector=True)
+    result_image.SetOrigin(psf.GetOrigin())
+    result_image.SetSpacing(psf.GetSpacing())
+    result_image.SetDirection(psf.GetDirection())
+
+    return result_image
