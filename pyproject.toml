@@ -6,6 +6,7 @@ build-backend = "flit_core.buildapi"
 test = [
     "pytest >=2.7.3",
     "pytest-cov",
+    "pytest-benchmark[histogram]",
 ]
 
 [tool.flit.metadata]

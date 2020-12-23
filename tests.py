@@ -19,8 +19,8 @@ def test_package():
     import simtk
     assert hasattr(simtk, '__version__')
 
-def test_load_image():
-    image = simtk.load_image(test_psf_file, spacing=[0.11, 0.11, 0.1])
+def test_load_image(benchmark):
+    image = benchmark(simtk.load_image, test_psf_file, spacing=[0.11, 0.11, 0.1])
 
     baseline = str(data_dir / 'baseline' / 'load_image.nrrd')
     baseline_image = itk.imread(baseline)
