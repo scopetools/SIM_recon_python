@@ -18,6 +18,7 @@ classifiers = ["License :: OSI Approved :: Apache Software License"]
 requires=[
     "itk",
     "numpy",
+    "scipy",
     "pydra",
 ]
 requires-python=">=3.7"

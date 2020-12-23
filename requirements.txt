@@ -1,3 +1,4 @@
 itk
 numpy
+scipy
 pydra

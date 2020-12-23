@@ -10,6 +10,7 @@ __all__ = [
 
 import itk
 import numpy as np
+import scipy.optimize
 
 def load_image(filename, nphases=3, norientations=1, spacing=None):
     """Load SIM acquisition data from an image file.
@@ -90,6 +91,104 @@ def normalize_psf(psf):
     result_image = itk.PyBuffer[itk.VectorImage[itk.F, 3]].GetImageViewFromArray(result, is_vector=True)
     result_image.SetOrigin(psf.GetOrigin())
     result_image.SetSpacing(psf.GetSpacing())
+    result_image.SetDirection(psf.GetDirection())
+
+    return result_image
+
+def center_psf(psf):
+    """Center the PSF in the image. The data is resampled around the center and
+    the origin of the output is set to the center.
+
+    Parameters
+    ----------
+
+    psf: itk.VectorImage
+        SIM point spread function (PSF) acquisition data, e.g. from
+        simtk.normalize_psf.
+
+    Returns
+    -------
+
+    itk.VectorImage
+        Centered PSF.
+    """
+
+    psf_arr = itk.array_view_from_image(psf)
+    widefield_psf = np.zeros(psf_arr.shape[:-1], dtype=np.float32)
+    for component in range(psf_arr.shape[-1]):
+        widefield_psf[...] += psf_arr[..., component]
+    widefield_psf /= np.sum(widefield_psf)
+
+    (nz, ny, nx) = widefield_psf.shape
+    (zz, yy, xx) = np.meshgrid(np.arange(nz), np.arange(ny), np.arange(nx), indexing='ij')
+    peak_image_flat = np.ravel(widefield_psf)
+    peak_data = np.stack((peak_image_flat,
+                          np.ravel(zz),
+                          np.ravel(yy),
+                          np.ravel(xx)),
+                         axis=1)
+
+    max_value = np.max(peak_image_flat)
+    max_index = np.argmax(peak_image_flat)
+    (cz, cy, cx) = np.unravel_index(max_index, widefield_psf.shape)
+
+    initial_params = np.zeros((7,), dtype=np.float64)
+    initial_params[0] = max_value # max value in the window
+    initial_params[1] = cz # z pixel index of the peak
+    initial_params[2] = cy # y pixel index of the peak
+    initial_params[3] = cx # x pixel index of the peak
+    initial_params[4] = 1.5 # z sigma
+    initial_params[5] = 1.5 # y sigma
+    initial_params[6] = 1.5 # x sigma
+
+    def gaussian_fit_objective(params, peak_data):
+        actual = peak_data[:,0]
+        expected = params[0] * np.exp(-((peak_data[:,1] - params[1])**2 / (2*params[4]**2) + \
+                                        (peak_data[:,2] - params[2])**2 / (2*params[5]**2) + \
+                                        (peak_data[:,3] - params[3])**2 / (2*params[6]**2)))
+        err = actual - expected
+        result = np.sum(err**2)
+        return result
+
+    params_opt = scipy.optimize.fmin(func=gaussian_fit_objective,
+                                     x0=initial_params,
+                                     args=(peak_data,),
+                                     maxiter=10000,
+                                     maxfun=10000,
+                                     disp=False,
+                                     xtol=1e-6,
+                                     ftol=1e-6)
+    (cz_opt, cy_opt, cx_opt) = params_opt[1:4]
+
+    result = np.copy(psf_arr)
+    transform = itk.TranslationTransform[itk.D, 3].New()
+    transform_params = transform.GetParameters()
+    transform_params[0] = float(cx) - cx_opt
+    transform_params[1] = float(cy) - cy_opt
+    transform_params[2] = float(cz) - cz_opt
+    transform.SetParameters(transform_params)
+    interpolator = itk.WindowedSincInterpolateImageFunction[itk.Image[itk.F,3],
+            3, itk.HammingWindowFunction[3]].New()
+    for component in range(psf_arr.shape[-1]):
+        component_arr = psf_arr[..., component]
+        component_image = itk.image_view_from_array(component_arr)
+        resampled = itk.resample_image_filter(component_image,
+                                              use_reference_image=True,
+                                              reference_image=component_image,
+                                              transform=transform,
+                                              interpolator=interpolator,
+                                              )
+        resampled_arr = itk.array_view_from_image(resampled)
+        result[..., component] = resampled_arr
+
+    result_image = itk.PyBuffer[itk.VectorImage[itk.F, 3]].GetImageViewFromArray(result, is_vector=True)
+    origin = list(itk.origin(psf))
+    spacing = itk.spacing(psf)
+    origin[0] -= cx * spacing[0]
+    origin[1] -= cy * spacing[1]
+    origin[2] -= cz * spacing[2]
+    result_image.SetOrigin(origin)
+    result_image.SetSpacing(spacing)
     result_image.SetDirection(psf.GetDirection())
 
     return result_image
