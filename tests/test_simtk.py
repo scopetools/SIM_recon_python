@@ -77,16 +77,11 @@ def test_center_psf(benchmark):
 def test_generate_otf(benchmark):
     psf_filename = str(data_dir / 'baseline' / 'center_psf.nrrd')
     psf = itk.imread(psf_filename)
-    otf = benchmark(generate_otf, psf)
+    lattice_period = 0.52932
+    phase_step = 0.170
+    otf = benchmark(generate_otf, psf, lattice_period, phase_step)
 
-    # otf_arr = itk.array_view_from_image(otf)
+    baseline = str(data_dir / 'baseline' / 'generate_otf.npy')
+    baseline_otf = np.load(baseline)
 
-    # baseline = str(data_dir / 'baseline' / 'generate_otf.nrrd')
-    # baseline_image = itk.imread(baseline)
-
-    # baseline_arr = itk.array_view_from_image(baseline_image)
-    # assert np.array_equal(otf_arr, baseline_arr)
-
-    # otf_spacing = np.asarray(itk.spacing(otf))
-    # baseline_spacing = np.asarray(itk.spacing(baseline_image))
-    # assert np.array_equal(otf_spacing, baseline_spacing)
+    assert np.allclose(otf, baseline_otf)

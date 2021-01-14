@@ -194,7 +194,33 @@ def center_psf(psf):
 
     return result_image
 
-def generate_otf(psf, nphases=3, norientations=1, norders=3):
+def make_forward_separation_matrix(nphases, norders, lattice_period, phase_step):
+    """Generate the forward matrix required to separate OTF orders from an image
+    acquired under multiple phases of illumination.  This matrix will need
+    to be inverted prior to multiplying by the raw image OTFs to separate
+    the components.
+    """
+
+    # After this step, separation of orders will be [0, +1, -1, +2, -2,...]
+    delta_phi = phase_step / lattice_period*2*np.pi # Convert phase step in nm to phase step as a fraction of 2pi
+
+    sep_matrix = np.zeros((nphases, norders), dtype=np.complex128)
+    for phase in range(nphases):
+        counter = 0
+        phase_sign = 1
+        for order in range(norders):
+            sep_matrix[phase, order] = np.exp(1.j*phase_sign*counter*phase*delta_phi)
+            counter += np.mod(order+1, 2)
+            phase_sign = -1 + 2*np.mod(order+1, 2)
+
+    # Reorganize so that orders will be [..-2,-1,0,+1,+2...]
+    sep_matrix_reorder = np.zeros_like(sep_matrix)
+    sep_matrix_reorder[:, :int(sep_matrix_reorder.shape[1]/2)+1] = sep_matrix[:, ::-2]
+    sep_matrix_reorder[:, int(sep_matrix_reorder.shape[1]/2)+1:] = sep_matrix[:, 1::2]
+    return sep_matrix_reorder
+
+
+def generate_otf(psf, lattice_period, phase_step, nphases=3, norientations=1, norders=3):
     """Generate the OTF from the PSF.
 
     Fourier transform and separate information components.
@@ -205,17 +231,21 @@ def generate_otf(psf, nphases=3, norientations=1, norders=3):
     psf: itk.VectorImage
         SIM point spread function (PSF) acquisition data, e.g. from
         simtk.center_psf.
+    lattice_period: float
+        Lattice period in microns -- this is the coarsest period.
+    phase_step: float
+        Phase step in microns.
     nphases: int
         Number of phases acquired in every plane.
     norientations: int
         Number of orientations acquired in every plane.
-    norientations: int
-        Number of orders acquired in every plane.
+    norders: int
+        Number of orders.
 
     Returns
     -------
 
-    complex float ndarray with dimensions [kz, ky, kx, norders, orientation]
+    complex float ndarray with dimensions [kz, ky, kx, order, orientation]
     """
 
     psf_arr = itk.array_view_from_image(psf)
@@ -224,6 +254,10 @@ def generate_otf(psf, nphases=3, norientations=1, norders=3):
 
     otf = np.zeros(psf_arr.shape[:3] + (norders, norientations), dtype=np.complex128)
 
+    sep_matrix = make_forward_separation_matrix(nphases, norders,
+            lattice_period, phase_step)
+    inv_sep_matrix = np.linalg.pinv(sep_matrix)
+
     for orientation in range(norientations):
         Dr = np.zeros_like(psf_arr)
         Dk = np.zeros(psf_arr.shape, dtype=np.complex128)
@@ -231,5 +265,11 @@ def generate_otf(psf, nphases=3, norientations=1, norders=3):
         for phase in range(nphases):
             Dr[:,:,:,phase:phase+1] = psf_arr[:,:,:,phase+orientation*nphases::nphases*norientations]
             Dk[:,:,:,phase] = np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(Dr[:,:,:,phase]))) * np.prod(dk_psf)
+
+        # Separate OFT orders by solving the linear system of equations for each
+        # pixel
+        for ii in range(nphases):
+            for kk in range(nphases):
+                otf[:,:,:,ii,orientation] = otf[:,:,:,ii,orientation] + inv_sep_matrix[ii,kk]*Dk[:,:,:,kk]
 
     return otf
