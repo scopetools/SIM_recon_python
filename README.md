@@ -28,5 +28,5 @@ cd simtk
 pip install -r requirements.txt -r requirements-dev.txt
 
 # Run tests
-pytest tests.py -v --benchmark-autosave --cov=simtk
+pytest tests/ -v --benchmark-autosave --cov=simtk
 ```
