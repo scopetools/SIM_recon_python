@@ -15,7 +15,7 @@ sys.path.insert(0, str(package_dir))
 
 test_psf_file = str(data_dir / 'input' / 'PSF_3phase.tif')
 
-from simtk import load_image, normalize_psf, center_psf, generate_otf, normalize_otf
+from simtk import load_image, normalize_psf, center_psf, generate_otf, normalize_otf, save_otf, load_otf
 
 def test_package():
     import simtk
@@ -98,3 +98,14 @@ def test_normalize_otf(benchmark):
     baseline_otf = np.load(baseline)
 
     assert np.allclose(normalized_otf, baseline_otf)
+
+def test_save_load_otf(tmp_path):
+    otf_filename = str(data_dir / 'baseline' / 'normalize_otf.npy')
+    baseline_otf = np.load(otf_filename)
+
+    filename = tmp_path / 'save_otf.npy'
+
+    save_otf(baseline_otf, str(filename))
+    otf = load_otf(str(filename))
+
+    assert np.allclose(otf, baseline_otf)

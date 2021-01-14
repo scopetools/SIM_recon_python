@@ -8,6 +8,8 @@ __all__ = [
         'center_psf',
         'generate_otf',
         'normalize_otf',
+        'save_otf',
+        'load_otf',
         ]
 
 import itk
@@ -308,3 +310,36 @@ def normalize_otf(otf, spacing, norientations=1, norders=3):
         normalized_otf[:,:,:,:,orientation] = otf[:,:,:,:,orientation] / np.sqrt(energy)
 
     return normalized_otf
+
+
+def save_otf(otf, filename):
+    """Save the OTF to a file.
+
+    Parameters
+    ----------
+
+    otf: ndarray
+        SIM optical transfer function (OTF), e.g. from
+        simtk.generate_otf.
+    filename: str
+        Path to the file
+    """
+
+    np.save(filename, otf)
+
+def load_otf(filename):
+    """Load the OTF from a file.
+
+    Parameters
+    ----------
+
+    filename: str
+        Path to the file
+
+    Returns
+    -------
+
+    complex float ndarray with dimensions [kz, ky, kx, order, orientation]
+    """
+
+    return np.load(filename)
