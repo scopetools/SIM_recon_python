@@ -7,6 +7,7 @@ __all__ = [
         'normalize_psf',
         'center_psf',
         'generate_otf',
+        'normalize_otf',
         ]
 
 import itk
@@ -273,3 +274,37 @@ def generate_otf(psf, lattice_period, phase_step, nphases=3, norientations=1, no
                 otf[:,:,:,ii,orientation] = otf[:,:,:,ii,orientation] + inv_sep_matrix[ii,kk]*Dk[:,:,:,kk]
 
     return otf
+
+def normalize_otf(otf, spacing, norientations=1, norders=3):
+    """Normalize the OTF's so that the 0th order of each orientation has unit
+    energy.
+
+    Parameters
+    ----------
+
+    otf: ndarray
+        SIM optical transfer function (OTF), e.g. from
+        simtk.generate_otf.
+    spacing: array of float's
+        Image spacing metadata, [dx, dy, dz].
+    norientations: int
+        Number of orientations acquired in every plane.
+    norders: int
+        Number of orders.
+
+    Returns
+    -------
+
+    complex float ndarray with dimensions [kz, ky, kx, order, orientation]
+    """
+
+    normalized_otf = np.copy(otf)
+    dk_psf = 1./(otf.shape[:3] * np.asarray(spacing))
+
+    for orientation in range(norientations):
+        otf_0 = otf[:,:,:,int(np.ceil(norders/2.)),orientation]
+        otf_0_ravel = otf_0.ravel()
+        energy = np.sum(otf_0_ravel * np.conj(otf_0_ravel * np.prod(dk_psf)))
+        normalized_otf[:,:,:,:,orientation] = otf[:,:,:,:,orientation] / np.sqrt(energy)
+
+    return normalized_otf
