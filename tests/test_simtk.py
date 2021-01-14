@@ -15,7 +15,7 @@ sys.path.insert(0, str(package_dir))
 
 test_psf_file = str(data_dir / 'input' / 'PSF_3phase.tif')
 
-from simtk import load_image, normalize_psf, center_psf
+from simtk import load_image, normalize_psf, center_psf, generate_otf
 
 def test_package():
     import simtk
@@ -73,3 +73,20 @@ def test_center_psf(benchmark):
     center_spacing = np.asarray(itk.spacing(center))
     baseline_spacing = np.asarray(itk.spacing(baseline_image))
     assert np.array_equal(center_spacing, baseline_spacing)
+
+def test_generate_otf(benchmark):
+    psf_filename = str(data_dir / 'baseline' / 'center_psf.nrrd')
+    psf = itk.imread(psf_filename)
+    otf = benchmark(generate_otf, psf)
+
+    # otf_arr = itk.array_view_from_image(otf)
+
+    # baseline = str(data_dir / 'baseline' / 'generate_otf.nrrd')
+    # baseline_image = itk.imread(baseline)
+
+    # baseline_arr = itk.array_view_from_image(baseline_image)
+    # assert np.array_equal(otf_arr, baseline_arr)
+
+    # otf_spacing = np.asarray(itk.spacing(otf))
+    # baseline_spacing = np.asarray(itk.spacing(baseline_image))
+    # assert np.array_equal(otf_spacing, baseline_spacing)

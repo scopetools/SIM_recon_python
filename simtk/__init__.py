@@ -6,6 +6,7 @@ __all__ = [
         'load_image',
         'normalize_psf',
         'center_psf',
+        'generate_otf',
         ]
 
 import itk
@@ -192,3 +193,26 @@ def center_psf(psf):
     result_image.SetDirection(psf.GetDirection())
 
     return result_image
+
+def generate_otf(psf, nphases=3, norientations=1):
+    """Generate the OTF from the PSF.
+    the origin of the output is set to the center.
+
+    Parameters
+    ----------
+
+    psf: itk.VectorImage
+        SIM point spread function (PSF) acquisition data, e.g. from
+        simtk.center_psf.
+    nphases: int
+        Number of phases acquired in every plane.
+    norientations: int
+        Number of orientations acquired in every plane.
+
+    Returns
+    -------
+
+    ndarray with dimensions [w, u, v, phase, orientation]
+    """
+
+    pass
