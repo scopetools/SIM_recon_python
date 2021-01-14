@@ -30,3 +30,10 @@ pip install -r requirements.txt -r requirements-dev.txt
 # Run tests
 pytest tests/ -v --benchmark-autosave --cov=simtk
 ```
+
+This project uses the [black](https://github.com/psf/black) code formatter for
+a consistent coding style. To apply the formatter:
+
+```
+black simtk/* tests/*
+```
