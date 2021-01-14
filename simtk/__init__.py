@@ -194,9 +194,10 @@ def center_psf(psf):
 
     return result_image
 
-def generate_otf(psf, nphases=3, norientations=1):
+def generate_otf(psf, nphases=3, norientations=1, norders=3):
     """Generate the OTF from the PSF.
-    the origin of the output is set to the center.
+
+    Fourier transform and separate information components.
 
     Parameters
     ----------
@@ -208,11 +209,27 @@ def generate_otf(psf, nphases=3, norientations=1):
         Number of phases acquired in every plane.
     norientations: int
         Number of orientations acquired in every plane.
+    norientations: int
+        Number of orders acquired in every plane.
 
     Returns
     -------
 
-    ndarray with dimensions [w, u, v, phase, orientation]
+    complex float ndarray with dimensions [kz, ky, kx, norders, orientation]
     """
 
-    pass
+    psf_arr = itk.array_view_from_image(psf)
+    spacing = np.asarray(itk.spacing(psf))[::-1] # z, y, x
+    dk_psf = 1./(psf_arr.shape[:3] * spacing)
+
+    otf = np.zeros(psf_arr.shape[:3] + (norders, norientations), dtype=np.complex128)
+
+    for orientation in range(norientations):
+        Dr = np.zeros_like(psf_arr)
+        Dk = np.zeros(psf_arr.shape, dtype=np.complex128)
+
+        for phase in range(nphases):
+            Dr[:,:,:,phase:phase+1] = psf_arr[:,:,:,phase+orientation*nphases::nphases*norientations]
+            Dk[:,:,:,phase] = np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(Dr[:,:,:,phase]))) * np.prod(dk_psf)
+
+    return otf
