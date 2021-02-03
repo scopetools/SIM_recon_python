@@ -34,7 +34,7 @@ def load_image(filename, nphases=3, norientations=1, spacing=None):
     norientations: int
         Number of orientations acquired in every plane.
     spacing: array of float's
-        Override image spacing metadata with the provided [dx, dy, dz] spacing.
+        Override image spatial domain spacing metadata with the provided [dx, dy, dz] spacing.
 
     Returns
     -------
@@ -327,7 +327,7 @@ def normalize_otf(otf, spacing, norientations=1, norders=3):
         SIM optical transfer function (OTF), e.g. from
         simtk.generate_otf.
     spacing: array of float's
-        Image spacing metadata, [dx, dy, dz].
+        Image spatial domain spacing metadata, [dx, dy, dz].
     norientations: int
         Number of orientations acquired in every plane.
     norders: int
