@@ -6,7 +6,7 @@ __all__ = [
     "load_image",
     "normalize_psf",
     "center_psf",
-    "generate_otf",
+    "separate_orders",
     "normalize_otf",
     "save_otf",
     "load_otf",
@@ -251,7 +251,7 @@ def make_forward_separation_matrix(nphases, norders, lattice_period, phase_step)
     return sep_matrix_reorder
 
 
-def generate_otf(
+def separate_orders(
     psf, lattice_period, phase_step, nphases=3, norientations=1, norders=3
 ):
     """Generate the OTF from the PSF.
@@ -325,7 +325,7 @@ def normalize_otf(otf, spacing, norientations=1, norders=3):
 
     otf: ndarray
         SIM optical transfer function (OTF), e.g. from
-        simtk.generate_otf.
+        simtk.separate_orders.
     spacing: array of float's
         Image spatial domain spacing metadata, [dx, dy, dz].
     norientations: int
@@ -361,7 +361,7 @@ def save_otf(otf, filename):
 
     otf: ndarray
         SIM optical transfer function (OTF), e.g. from
-        simtk.generate_otf.
+        simtk.separate_orders.
     filename: str
         Path to the file
     """

@@ -19,7 +19,7 @@ from simtk import (
     load_image,
     normalize_psf,
     center_psf,
-    generate_otf,
+    separate_orders,
     normalize_otf,
     save_otf,
     load_otf,
@@ -88,14 +88,14 @@ def test_center_psf(benchmark):
     assert np.array_equal(center_spacing, baseline_spacing)
 
 
-def test_generate_otf(benchmark):
+def test_separate_orders(benchmark):
     psf_filename = str(data_dir / "baseline" / "center_psf.nrrd")
     psf = itk.imread(psf_filename)
     lattice_period = 0.52932
     phase_step = 0.170
-    otf = benchmark(generate_otf, psf, lattice_period, phase_step)
+    otf = benchmark(separate_orders, psf, lattice_period, phase_step)
 
-    baseline = str(data_dir / "baseline" / "generate_otf.npy")
+    baseline = str(data_dir / "baseline" / "separate_orders.npy")
     baseline_otf = np.load(baseline)
 
     assert np.allclose(otf, baseline_otf)
@@ -104,7 +104,7 @@ def test_generate_otf(benchmark):
 def test_normalize_otf(benchmark):
     spacing = [0.11, 0.11, 0.1]
 
-    otf_filename = str(data_dir / "baseline" / "generate_otf.npy")
+    otf_filename = str(data_dir / "baseline" / "separate_orders.npy")
     otf = np.load(otf_filename)
 
     normalized_otf = benchmark(normalize_otf, otf, spacing)
