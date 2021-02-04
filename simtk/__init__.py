@@ -15,6 +15,8 @@ __all__ = [
 import itk
 import numpy as np
 import scipy.optimize
+import xarray as xr
+import zarr
 
 
 def load_image(filename, nphases=3, norientations=1, spacing=None):
@@ -278,7 +280,7 @@ def separate_orders(
     Returns
     -------
 
-    complex float ndarray with dimensions [kz, ky, kx, order, orientation]
+    complex float xarray.DataArray with dims [kz, ky, kx, order, orientation]
     """
 
     psf_arr = itk.array_view_from_image(psf)
@@ -313,7 +315,23 @@ def separate_orders(
                     + inv_sep_matrix[ii, kk] * Dk[:, :, :, kk]
                 )
 
-    return otf
+    otf_da = xr.DataArray(data=otf,
+                      name='otf',
+                      dims=['kz', 'ky', 'kx', 'order', 'orientation'],
+                      coords=dict(
+                          kz=np.fft.fftfreq(otf.shape[0], spacing[0]),
+                          ky=np.fft.fftfreq(otf.shape[1], spacing[1]),
+                          kx=np.fft.fftfreq(otf.shape[2], spacing[2]),
+                          order=np.arange(norders),
+                          orientation=np.arange(norientations),
+                          ),
+                      attrs=dict(
+                          lattice_period=lattice_period,
+                          phase_step=phase_step,
+                          nphases=nphases,
+                          )
+                      )
+    return otf_da
 
 
 def normalize_otf(otf, spacing, norientations=1, norders=3):
@@ -323,7 +341,7 @@ def normalize_otf(otf, spacing, norientations=1, norders=3):
     Parameters
     ----------
 
-    otf: ndarray
+    otf: xarray.DataArray
         SIM optical transfer function (OTF), e.g. from
         simtk.separate_orders.
     spacing: array of float's
@@ -336,15 +354,15 @@ def normalize_otf(otf, spacing, norientations=1, norders=3):
     Returns
     -------
 
-    complex float ndarray with dimensions [kz, ky, kx, order, orientation]
+    complex float xarray.DataArray with dims [kz, ky, kx, order, orientation]
     """
 
-    normalized_otf = np.copy(otf)
+    normalized_otf = xr.DataArray.copy(otf)
     dk_psf = 1.0 / (otf.shape[:3] * np.asarray(spacing))
 
     for orientation in range(norientations):
         otf_0 = otf[:, :, :, int(np.ceil(norders / 2.0)), orientation]
-        otf_0_ravel = otf_0.ravel()
+        otf_0_ravel = otf_0.data.ravel()
         energy = np.sum(otf_0_ravel * np.conj(otf_0_ravel * np.prod(dk_psf)))
         normalized_otf[:, :, :, :, orientation] = otf[
             :, :, :, :, orientation
@@ -359,14 +377,16 @@ def save_otf(otf, filename):
     Parameters
     ----------
 
-    otf: ndarray
+    otf: xr.DataArray
         SIM optical transfer function (OTF), e.g. from
         simtk.separate_orders.
     filename: str
-        Path to the file
+        Path to the file with .zip extension.
     """
 
-    np.save(filename, otf)
+    otf_ds = otf.to_dataset(name='otf')
+    with zarr.ZipStore(filename, mode='w') as store:
+        otf_ds.to_zarr(store, compute=True)
 
 
 def load_otf(filename):
@@ -381,7 +401,9 @@ def load_otf(filename):
     Returns
     -------
 
-    complex float ndarray with dimensions [kz, ky, kx, order, orientation]
+    complex float xarray.DataArray with dims [kz, ky, kx, order, orientation]
     """
 
-    return np.load(filename)
+    with zarr.ZipStore(filename, mode='r') as store:
+        otf_ds = xr.open_zarr(store).compute()
+    return otf_ds.otf

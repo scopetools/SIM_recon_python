@@ -2,3 +2,5 @@ itk>=5.2rc1
 numpy
 scipy
 pydra
+xarray
+zarr

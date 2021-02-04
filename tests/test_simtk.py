@@ -98,28 +98,28 @@ def test_separate_orders(benchmark):
     baseline = str(data_dir / "baseline" / "separate_orders.npy")
     baseline_otf = np.load(baseline)
 
-    assert np.allclose(otf, baseline_otf)
+    assert np.allclose(otf.data, baseline_otf)
 
 
 def test_normalize_otf(benchmark):
     spacing = [0.11, 0.11, 0.1]
 
-    otf_filename = str(data_dir / "baseline" / "separate_orders.npy")
-    otf = np.load(otf_filename)
+    otf_filename = str(data_dir / "baseline" / "separate_orders.zarr.zip")
+    otf = load_otf(otf_filename)
 
     normalized_otf = benchmark(normalize_otf, otf, spacing)
 
     baseline = str(data_dir / "baseline" / "normalize_otf.npy")
     baseline_otf = np.load(baseline)
 
-    assert np.allclose(normalized_otf, baseline_otf)
+    assert np.allclose(normalized_otf.data, baseline_otf)
 
 
 def test_save_load_otf(tmp_path):
-    otf_filename = str(data_dir / "baseline" / "normalize_otf.npy")
-    baseline_otf = np.load(otf_filename)
+    otf_filename = str(data_dir / "baseline" / "separate_orders.zarr.zip")
+    baseline_otf = load_otf(otf_filename)
 
-    filename = tmp_path / "save_otf.npy"
+    filename = tmp_path / "save_otf.zarr.zip"
 
     save_otf(baseline_otf, str(filename))
     otf = load_otf(str(filename))
